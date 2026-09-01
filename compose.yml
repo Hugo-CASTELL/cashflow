@@ -14,6 +14,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - cashflow
 
   backend:
     build:
@@ -29,14 +31,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - cashflow
 
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_API_URL: /api
+    environment:
+      API_URL: http://backend:3000
     ports:
       - "5173:3000"
     depends_on:
       - backend
+    networks:
+      - cashflow
 
 volumes:
   postgres_data:
+
+networks:
+  cashflow:
+    name: cashflow
