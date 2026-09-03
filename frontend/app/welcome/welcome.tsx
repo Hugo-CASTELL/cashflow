@@ -1,5 +1,7 @@
+import { Link } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
+import { Button } from "~/components/ui/button";
 
 export function Welcome() {
   return (
@@ -24,6 +26,11 @@ export function Welcome() {
             <p className="leading-6 text-gray-700 dark:text-gray-200 text-center">
               What&apos;s next?
             </p>
+            <div className="flex justify-center">
+              <Link to="/test">
+                <Button>Open API test page</Button>
+              </Link>
+            </div>
             <ul>
               {resources.map(({ href, text, icon }) => (
                 <li key={href}>

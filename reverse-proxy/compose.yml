@@ -1,0 +1,15 @@
+# Nginx is included in the root compose.yml.
+# This folder holds the shared nginx.conf and TLS helper scripts.
+#
+# Start the full stack (including nginx):
+#   ./reverse-proxy/generate-certs.sh
+#   docker compose up --build
+#
+# Entry points:
+#   http://localhost        -> nginx -> frontend
+#   https://localhost       -> nginx -> frontend
+#   http://localhost/api/   -> nginx -> backend
+#   http://localhost:5173   -> frontend (also proxies /api to backend)
+#   http://localhost:3000   -> backend (direct)
+
+services: {}
