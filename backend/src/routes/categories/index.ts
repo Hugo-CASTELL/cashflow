@@ -158,6 +158,15 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       return reply.badRequest('Invalid category id')
     }
 
+    const linked = await fastify.pg.query(
+      'SELECT id FROM transactions WHERE category_id = $1 LIMIT 1',
+      [id]
+    )
+
+    if (linked.rowCount && linked.rowCount > 0) {
+      return reply.conflict('Category has transactions; delete them first')
+    }
+
     const result = await fastify.pg.query(
       'DELETE FROM categories WHERE id = $1 RETURNING id',
       [id]

@@ -40,12 +40,17 @@ async function request<T>(
   isServer = typeof window === "undefined"
 ): Promise<T> {
   const base = getApiBase(isServer)
+  const headers = new Headers(options.headers)
+
+  // Fastify rejects empty bodies when Content-Type is application/json
+  // (FST_ERR_CTP_EMPTY_JSON_BODY → 400). Only set it when sending a body.
+  if (options.body != null && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json")
+  }
+
   const response = await fetch(`${base}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
     ...options,
+    headers,
   })
 
   if (!response.ok) {

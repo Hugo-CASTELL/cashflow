@@ -37,6 +37,15 @@ function proxyApi(req, res) {
   const headers = { ...req.headers, host: target.host };
   delete headers["connection"];
 
+  // Avoid Fastify FST_ERR_CTP_EMPTY_JSON_BODY on DELETE/GET with
+  // Content-Type: application/json and no body.
+  const method = (req.method || "GET").toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "DELETE") {
+    delete headers["content-type"];
+    delete headers["content-length"];
+    delete headers["transfer-encoding"];
+  }
+
   const proxyReq = transport.request(
     target,
     {
@@ -56,6 +65,11 @@ function proxyApi(req, res) {
     }
     res.end("Bad Gateway");
   });
+
+  if (method === "GET" || method === "HEAD" || method === "DELETE") {
+    proxyReq.end();
+    return;
+  }
 
   req.pipe(proxyReq);
 }

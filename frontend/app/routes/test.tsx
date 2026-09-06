@@ -1,6 +1,6 @@
 import type { Route } from "./+types/test";
 import { Link, useRevalidator } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -24,8 +24,6 @@ import {
   categoryTitleFromBarcode,
   SAMPLE_BARCODED_CATEGORIES,
   SAMPLE_BARCODED_TRANSACTIONS,
-  type Category,
-  type Transaction,
 } from "~/lib/api";
 
 export function meta({}: Route.MetaArgs) {
@@ -46,23 +44,17 @@ export async function loader() {
 
 export default function TestPage({ loaderData }: Route.ComponentProps) {
   const revalidator = useRevalidator();
-  const [categories, setCategories] = useState<Category[]>(loaderData.categories);
-  const [transactions, setTransactions] = useState<Transaction[]>(
-    loaderData.transactions
-  );
+  const { categories, transactions } = loaderData;
   const [barcode, setBarcode] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function refresh() {
-    const [nextCategories, nextTransactions] = await Promise.all([
-      api.listCategories(),
-      api.listTransactions(),
-    ]);
-    setCategories(nextCategories);
-    setTransactions(nextTransactions);
-    revalidator.revalidate();
-  }
+  // Clear stale status when loader data refreshes after a mutation.
+  useEffect(() => {
+    if (revalidator.state === "idle") {
+      setIsSubmitting(false);
+    }
+  }, [revalidator.state]);
 
   async function runAction(action: () => Promise<void>, successMessage: string) {
     setIsSubmitting(true);
@@ -70,16 +62,17 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
 
     try {
       await action();
-      await refresh();
       setStatus(successMessage);
+      revalidator.revalidate();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Request failed");
-    } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function addBarcodedCategory(sample: (typeof SAMPLE_BARCODED_CATEGORIES)[number]) {
+  async function addBarcodedCategory(
+    sample: (typeof SAMPLE_BARCODED_CATEGORIES)[number]
+  ) {
     await runAction(async () => {
       await api.createCategory({
         title: categoryTitleFromBarcode(sample.barcode, sample.title),
@@ -115,6 +108,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
     }, `Added category from scanned barcode ${trimmed}`);
   }
 
+  const busy = isSubmitting || revalidator.state === "loading";
   const defaultCategoryId = categories[0]?.id;
 
   return (
@@ -124,9 +118,9 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
         <p className="text-muted-foreground">
           Add barcoded categories and transactions to verify the backend CRUD API.
         </p>
-        <Link to="/">
-          <Button variant="outline">Back home</Button>
-        </Link>
+        <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+          Back home
+        </Button>
       </div>
 
       {status ? (
@@ -148,8 +142,10 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
               {SAMPLE_BARCODED_CATEGORIES.map((sample) => (
                 <Button
                   key={sample.barcode}
-                  disabled={isSubmitting}
-                  onClick={() => addBarcodedCategory(sample)}
+                  disabled={busy}
+                  onClick={() => {
+                    void addBarcodedCategory(sample);
+                  }}
                 >
                   Add {sample.title}
                 </Button>
@@ -173,8 +169,10 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
               />
               <Button
                 variant="secondary"
-                disabled={isSubmitting}
-                onClick={() => addCategoryFromBarcodeInput()}
+                disabled={busy}
+                onClick={() => {
+                  void addCategoryFromBarcodeInput();
+                }}
               >
                 Add scanned category
               </Button>
@@ -195,10 +193,10 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
                 {SAMPLE_BARCODED_TRANSACTIONS.map((sample) => (
                   <Button
                     key={sample.barcode}
-                    disabled={isSubmitting}
-                    onClick={() =>
-                      addBarcodedTransaction(sample, defaultCategoryId)
-                    }
+                    disabled={busy}
+                    onClick={() => {
+                      void addBarcodedTransaction(sample, defaultCategoryId);
+                    }}
                   >
                     Add {sample.title} (${sample.amount})
                   </Button>
@@ -244,15 +242,15 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        disabled={isSubmitting}
-                        onClick={() =>
-                          runAction(
+                        disabled={busy}
+                        onClick={() => {
+                          void runAction(
                             async () => {
                               await api.deleteCategory(category.id);
                             },
                             `Deleted category ${category.id}`
-                          )
-                        }
+                          );
+                        }}
                       >
                         Delete
                       </Button>
@@ -298,15 +296,15 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        disabled={isSubmitting}
-                        onClick={() =>
-                          runAction(
+                        disabled={busy}
+                        onClick={() => {
+                          void runAction(
                             async () => {
                               await api.deleteTransaction(transaction.id);
                             },
                             `Deleted transaction ${transaction.id}`
-                          )
-                        }
+                          );
+                        }}
                       >
                         Delete
                       </Button>
