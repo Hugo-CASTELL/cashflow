@@ -22,4 +22,5 @@ COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 COPY ./server.js /app/server.js
 WORKDIR /app
+ENV NODE_ENV=production
 CMD ["npm", "run", "start"]

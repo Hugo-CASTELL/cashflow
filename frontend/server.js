@@ -1,13 +1,28 @@
-import compression from "compression";
-import express from "express";
-import http from "node:http";
-import https from "node:https";
-import morgan from "morgan";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { createRequestHandler } from "@react-router/express";
+// NODE_ENV must be set before React is imported. Static ESM imports are
+// hoisted, so we set NODE_ENV first and then dynamically import everything.
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = "production";
+}
 
-process.env.NODE_ENV = process.env.NODE_ENV ?? "production";
+const [
+  { default: compression },
+  { default: express },
+  { default: morgan },
+  { createRequestHandler },
+  http,
+  https,
+  path,
+  { fileURLToPath, pathToFileURL },
+] = await Promise.all([
+  import("compression"),
+  import("express"),
+  import("morgan"),
+  import("@react-router/express"),
+  import("node:http"),
+  import("node:https"),
+  import("node:path"),
+  import("node:url"),
+]);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 3000;
