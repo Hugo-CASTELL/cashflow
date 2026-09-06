@@ -17,11 +17,11 @@ const links = [
 export function TopNav({ month }: { month: string }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-2 sm:px-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:px-4">
         <p className="hidden shrink-0 text-sm font-semibold tracking-tight sm:block">
           Cashflow
         </p>
-        <nav className="grid min-w-0 flex-1 grid-cols-3 rounded-xl bg-muted p-1">
+        <nav className="grid min-w-0 flex-1 grid-cols-3 rounded-xl bg-muted p-1 sm:max-w-md">
           {links.map((link) => (
             <NavLink
               key={link.to}
