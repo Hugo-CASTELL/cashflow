@@ -25,6 +25,15 @@ export function QuickTransactionForm({ month }: { month: string }) {
   }, [month]);
 
   useEffect(() => {
+    if (!status) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setStatus(null), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [status]);
+
+  useEffect(() => {
     if (!categoryId && categories[0]) {
       setCategoryId(String(categories[0].id));
     }
