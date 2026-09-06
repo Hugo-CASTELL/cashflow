@@ -31,10 +31,46 @@ function parseOptionalParentId (parentId: unknown): number | null | undefined {
   return parsed
 }
 
+const INVALID_BUDGET = Symbol('invalid-budget')
+
+function parseOptionalBudget (
+  budget: unknown
+): string | null | undefined | typeof INVALID_BUDGET {
+  if (budget === undefined) {
+    return undefined
+  }
+
+  if (budget === null || budget === '') {
+    return null
+  }
+
+  if (typeof budget === 'number') {
+    if (!Number.isFinite(budget) || budget < 0) {
+      return INVALID_BUDGET
+    }
+
+    return budget.toFixed(2)
+  }
+
+  if (typeof budget === 'string' && budget.trim() !== '') {
+    const parsed = Number(budget)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return INVALID_BUDGET
+    }
+
+    return parsed.toFixed(2)
+  }
+
+  return INVALID_BUDGET
+}
+
+const CATEGORY_COLUMNS =
+  'id, title, parent_id, monthly_budget::text AS monthly_budget'
+
 const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get('/', async () => {
     const result = await fastify.pg.query<Category>(
-      'SELECT id, title, parent_id FROM categories ORDER BY id'
+      `SELECT ${CATEGORY_COLUMNS} FROM categories ORDER BY id`
     )
 
     return result.rows
@@ -48,7 +84,7 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Category>(
-      'SELECT id, title, parent_id FROM categories WHERE id = $1',
+      `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1`,
       [id]
     )
 
@@ -60,7 +96,7 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
   })
 
   fastify.post<{ Body: CreateCategoryInput }>('/', async (request, reply) => {
-    const { title, parent_id: parentId } = request.body ?? {}
+    const { title, parent_id: parentId, monthly_budget: monthlyBudget } = request.body ?? {}
 
     if (typeof title !== 'string' || title.trim() === '') {
       return reply.badRequest('Title is required')
@@ -69,6 +105,11 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     const parsedParentId = parseOptionalParentId(parentId)
     if (parsedParentId === null && parentId !== null && parentId !== undefined) {
       return reply.badRequest('Invalid parent_id')
+    }
+
+    const parsedBudget = parseOptionalBudget(monthlyBudget)
+    if (parsedBudget === INVALID_BUDGET) {
+      return reply.badRequest('Invalid monthly_budget')
     }
 
     if (parsedParentId !== undefined && parsedParentId !== null) {
@@ -83,8 +124,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Category>(
-      'INSERT INTO categories (title, parent_id) VALUES ($1, $2) RETURNING id, title, parent_id',
-      [title.trim(), parsedParentId ?? null]
+      `INSERT INTO categories (title, parent_id, monthly_budget) VALUES ($1, $2, $3) RETURNING ${CATEGORY_COLUMNS}`,
+      [title.trim(), parsedParentId ?? null, parsedBudget ?? null]
     )
 
     return reply.code(201).send(result.rows[0])
@@ -99,9 +140,9 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
         return reply.badRequest('Invalid category id')
       }
 
-      const { title, parent_id: parentId } = request.body ?? {}
+      const { title, parent_id: parentId, monthly_budget: monthlyBudget } = request.body ?? {}
 
-      if (title === undefined && parentId === undefined) {
+      if (title === undefined && parentId === undefined && monthlyBudget === undefined) {
         return reply.badRequest('At least one field is required')
       }
 
@@ -112,6 +153,11 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       const parsedParentId = parseOptionalParentId(parentId)
       if (parsedParentId === null && parentId !== null && parentId !== undefined) {
         return reply.badRequest('Invalid parent_id')
+      }
+
+      const parsedBudget = parseOptionalBudget(monthlyBudget)
+      if (parsedBudget === INVALID_BUDGET) {
+        return reply.badRequest('Invalid monthly_budget')
       }
 
       if (parsedParentId !== undefined && parsedParentId !== null) {
@@ -130,7 +176,7 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       const existing = await fastify.pg.query<Category>(
-        'SELECT id, title, parent_id FROM categories WHERE id = $1',
+        `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1`,
         [id]
       )
 
@@ -141,10 +187,11 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       const current = existing.rows[0]
       const nextTitle = title !== undefined ? title.trim() : current.title
       const nextParentId = parsedParentId !== undefined ? parsedParentId : current.parent_id
+      const nextBudget = parsedBudget !== undefined ? parsedBudget : current.monthly_budget
 
       const result = await fastify.pg.query<Category>(
-        'UPDATE categories SET title = $1, parent_id = $2 WHERE id = $3 RETURNING id, title, parent_id',
-        [nextTitle, nextParentId, id]
+        `UPDATE categories SET title = $1, parent_id = $2, monthly_budget = $3 WHERE id = $4 RETURNING ${CATEGORY_COLUMNS}`,
+        [nextTitle, nextParentId, nextBudget, id]
       )
 
       return result.rows[0]

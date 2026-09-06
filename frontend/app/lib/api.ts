@@ -2,6 +2,7 @@ export interface Category {
   id: number
   title: string
   parent_id: number | null
+  monthly_budget: string | null
 }
 
 export interface Transaction {
@@ -14,12 +15,25 @@ export interface Transaction {
 export interface CreateCategoryInput {
   title: string
   parent_id?: number | null
+  monthly_budget?: number | string | null
+}
+
+export interface UpdateCategoryInput {
+  title?: string
+  parent_id?: number | null
+  monthly_budget?: number | string | null
 }
 
 export interface CreateTransactionInput {
   amount: number | string
   date: string
   category_id: number
+}
+
+export interface UpdateTransactionInput {
+  amount?: number | string
+  date?: string
+  category_id?: number
 }
 
 function getBrowserApiBase(): string {
@@ -71,6 +85,11 @@ export const api = {
   createCategory: (data: CreateCategoryInput) =>
     request<Category>("/categories", {
       method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateCategory: (id: number, data: UpdateCategoryInput) =>
+    request<Category>(`/categories/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(data),
     }),
   deleteCategory: (id: number) =>
