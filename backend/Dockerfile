@@ -1,25 +1,21 @@
-FROM node:24-alpine AS development-dependencies-env
-COPY package.json package-lock.json /app/
+FROM node:24 AS build
 WORKDIR /app
+COPY package.json package-lock.json ./
 RUN npm ci
+COPY . .
+RUN npm run build:ts
 
-FROM node:24-alpine AS production-dependencies-env
-COPY package.json package-lock.json /app/
+FROM node:24-bookworm AS production
+RUN npm install -g fastify-cli \
+    && addgroup --system nonroot \
+    && adduser --system backend --ingroup nonroot \
+    && mkdir -p /app \
+    && chown backend:nonroot /app
 WORKDIR /app
-RUN npm ci --omit=dev
-
-FROM node:24-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
-WORKDIR /app
-RUN npm run build
-
-FROM node:24-alpine
-COPY package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/dist /app/dist
-COPY --from=build-env /app/migrations /app/migrations
-WORKDIR /app
+COPY migrations ./migrations
+COPY package.json package-lock.json ./
 ENV NODE_ENV=production
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+RUN npm ci --omit=dev
+COPY --from=build /app/dist ./dist
+USER backend
+CMD ["fastify", "start", "--log-level", "info", "--pretty-logs", "dist/app.js"]
