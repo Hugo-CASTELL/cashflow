@@ -10,7 +10,7 @@ import { formatMoney, parseMoney } from "~/lib/money";
 
 function formatDay(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",

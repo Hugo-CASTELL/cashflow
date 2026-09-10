@@ -16,7 +16,8 @@ export function QuickTransactionForm({ month }: { month: string }) {
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [date, setDate] = useState(() => defaultDateForMonth(month));
+  // Avoid SSR/client timezone skew on the date input (React #418).
+  const [date, setDate] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,6 +56,11 @@ export function QuickTransactionForm({ month }: { month: string }) {
 
     if (!Number.isInteger(parsedCategoryId) || parsedCategoryId <= 0) {
       setError("Choose a category");
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setError("Choose a date");
       return;
     }
 
