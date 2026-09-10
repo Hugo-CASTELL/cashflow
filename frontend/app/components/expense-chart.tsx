@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { monthHref } from "~/lib/month";
 import { formatMoneyCompact } from "~/lib/money";
@@ -28,30 +28,6 @@ function donutSlicePath(
   return `M ${p1.x} ${p1.y} A ${outer} ${outer} 0 ${large} 1 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${inner} ${inner} 0 ${large} 0 ${p4.x} ${p4.y} Z`;
 }
 
-function SliceLink({
-  to,
-  children,
-  className,
-}: {
-  to: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  const navigate = useNavigate();
-  return (
-    <a
-      href={to}
-      className={className}
-      onClick={(event) => {
-        event.preventDefault();
-        void navigate(to);
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
 export function ExpenseChart({
   items,
   month,
@@ -66,6 +42,14 @@ export function ExpenseChart({
   const slices = useMemo(() => items.filter((item) => item.spent > 0), [items]);
   const total = slices.reduce((sum, item) => sum + item.spent, 0);
   const recapHref = monthHref("/recap", month);
+  const navigate = useNavigate();
+
+  // Keep the ring inside the 100×100 viewBox: stroke is centered on the path,
+  // so r + strokeWidth/2 must stay ≤ 50 (with a little padding for hover grow).
+  const outer = 42;
+  const inner = 28;
+  const hoverOuter = 43.5;
+  const trackStroke = 12;
 
   const paths = useMemo(() => {
     if (slices.length === 0 || total <= 0) {
@@ -76,7 +60,7 @@ export function ExpenseChart({
       return [
         {
           item: slices[0],
-          d: donutSlicePath(50, 50, 31, 46, 0, 359.99),
+          d: donutSlicePath(50, 50, inner, outer, 0, 359.99),
         },
       ];
     }
@@ -90,35 +74,56 @@ export function ExpenseChart({
       angle += sweep;
       return {
         item,
-        d: donutSlicePath(50, 50, 31, hoveredId === item.category.id ? 47.5 : 46, start, Math.max(end, start + 0.4)),
+        d: donutSlicePath(
+          50,
+          50,
+          inner,
+          hoveredId === item.category.id ? hoverOuter : outer,
+          start,
+          Math.max(end, start + 0.4)
+        ),
       };
     });
   }, [hoveredId, slices, total]);
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[18rem] sm:max-w-[20rem]">
-      <svg viewBox="0 0 100 100" className="size-full" role="img" aria-label="Expenses by category">
-        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" className="text-muted" strokeWidth="12" />
-        {paths.map(({ item, d }) => (
-          <SliceLink
-            key={item.category.id}
-            to={monthHref(`/categories/${item.category.id}`, month)}
-            className="outline-none"
-          >
-            <path
-              d={d}
-              fill={item.color}
-              className="transition-opacity"
-              opacity={hoveredId == null || hoveredId === item.category.id ? 1 : 0.45}
-              onMouseEnter={() => onHover(item.category.id)}
-              onMouseLeave={() => onHover(null)}
+    <div className="relative mx-auto aspect-square w-full max-w-[18rem] overflow-visible p-1 sm:max-w-[20rem]">
+      <svg viewBox="0 0 100 100" className="size-full overflow-visible" role="img" aria-label="Expenses by category">
+        <circle
+          cx="50"
+          cy="50"
+          r={outer}
+          fill="none"
+          stroke="currentColor"
+          className="text-muted"
+          strokeWidth={trackStroke}
+        />
+        {paths.map(({ item, d }) => {
+          const href = monthHref(`/categories/${item.category.id}`, month);
+          const label = `${item.category.title}: ${formatMoneyCompact(item.spent)}`;
+          return (
+            <a
+              key={item.category.id}
+              href={href}
+              className="outline-none"
+              onClick={(event) => {
+                event.preventDefault();
+                void navigate(href);
+              }}
             >
-              <title>
-                {item.category.title}: {formatMoneyCompact(item.spent)}
-              </title>
-            </path>
-          </SliceLink>
-        ))}
+              <path
+                d={d}
+                fill={item.color}
+                className="transition-opacity"
+                opacity={hoveredId == null || hoveredId === item.category.id ? 1 : 0.45}
+                onMouseEnter={() => onHover(item.category.id)}
+                onMouseLeave={() => onHover(null)}
+              >
+                <title>{label}</title>
+              </path>
+            </a>
+          );
+        })}
       </svg>
       <Link
         to={recapHref}

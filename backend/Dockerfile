@@ -6,8 +6,7 @@ COPY . .
 RUN npm run build:ts
 
 FROM node:24-bookworm AS production
-RUN npm install -g fastify-cli \
-    && addgroup --system nonroot \
+RUN addgroup --system nonroot \
     && adduser --system backend --ingroup nonroot \
     && mkdir -p /app \
     && chown backend:nonroot /app
@@ -18,4 +17,6 @@ ENV NODE_ENV=production
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 USER backend
-CMD ["fastify", "start", "--log-level", "info", "--pretty-logs", "dist/app.js"]
+# Use the lockfile-installed CLI. A global `npm install -g fastify-cli` can pull
+# 8.0.1+, which depends on ESM pkg-up v5 and crashes with "pkgUp is not a function".
+CMD ["./node_modules/.bin/fastify", "start", "--log-level", "info", "dist/app.js"]

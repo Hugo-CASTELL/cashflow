@@ -10,7 +10,7 @@ import { formatMoney, parseMoney } from "~/lib/money";
 
 function formatDay(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -76,7 +76,23 @@ export function TransactionList({
                       aria-hidden="true"
                     />
                     <div className="min-w-0 flex-1">
-                      {showCategory ? (
+                      {transaction.title ? (
+                        <>
+                          <p className="truncate font-medium">{transaction.title}</p>
+                          {showCategory ? (
+                            <Link
+                              to={monthHref(`/categories/${transaction.category_id}`, month)}
+                              className="block truncate text-xs text-muted-foreground hover:underline"
+                            >
+                              {category?.title ?? "Unknown category"}
+                            </Link>
+                          ) : (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {category?.title ?? "Unknown category"}
+                            </p>
+                          )}
+                        </>
+                      ) : showCategory ? (
                         <Link
                           to={monthHref(`/categories/${transaction.category_id}`, month)}
                           className="block truncate font-medium hover:underline"

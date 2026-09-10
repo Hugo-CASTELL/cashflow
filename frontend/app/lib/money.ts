@@ -12,7 +12,7 @@ export function parseMoney(value: string | number | null | undefined): number {
 }
 
 export function formatMoney(value: number): string {
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 2,
@@ -22,7 +22,7 @@ export function formatMoney(value: number): string {
 export function formatMoneyCompact(value: number): string {
   const abs = Math.abs(value);
   if (abs >= 10_000) {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       notation: "compact",

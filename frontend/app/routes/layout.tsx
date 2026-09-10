@@ -12,10 +12,17 @@ export async function loader() {
 
     return { categories, transactions, loadError: null };
   } catch (error) {
+    const message =
+      error instanceof Error && /fetch failed|ECONNREFUSED|ENOTFOUND/i.test(error.message)
+        ? "Could not reach the API. Is the backend running?"
+        : error instanceof Error
+          ? error.message
+          : "Could not load data";
+
     return {
       categories: [] as Category[],
       transactions: [] as Transaction[],
-      loadError: error instanceof Error ? error.message : "Could not load data",
+      loadError: message,
     };
   }
 }

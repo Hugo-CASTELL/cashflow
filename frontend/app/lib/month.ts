@@ -20,7 +20,7 @@ export function shiftMonth(month: string, delta: number): string {
 
 export function formatMonthLabel(month: string, mode: "long" | "short" = "long"): string {
   const [year, monthIndex] = month.split("-").map(Number);
-  return new Date(year, monthIndex - 1, 1).toLocaleDateString(undefined, {
+  return new Date(year, monthIndex - 1, 1).toLocaleDateString("en-US", {
     month: mode,
     year: "numeric",
   });

@@ -14,8 +14,10 @@ export function QuickTransactionForm({ month }: { month: string }) {
   const { categories } = useAppData();
   const revalidator = useRevalidator();
   const [amount, setAmount] = useState("");
+  const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [date, setDate] = useState(() => defaultDateForMonth(month));
+  // Avoid SSR/client timezone skew on the date input (React #418).
+  const [date, setDate] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,6 +47,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
     event.preventDefault();
     const parsedAmount = Number(amount);
     const parsedCategoryId = Number(categoryId);
+    const trimmedTitle = title.trim();
 
     if (!Number.isFinite(parsedAmount) || parsedAmount === 0) {
       setError("Enter an amount");
@@ -53,6 +56,11 @@ export function QuickTransactionForm({ month }: { month: string }) {
 
     if (!Number.isInteger(parsedCategoryId) || parsedCategoryId <= 0) {
       setError("Choose a category");
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setError("Choose a date");
       return;
     }
 
@@ -65,8 +73,10 @@ export function QuickTransactionForm({ month }: { month: string }) {
         amount: parsedAmount,
         date,
         category_id: parsedCategoryId,
+        title: trimmedTitle === "" ? null : trimmedTitle,
       });
       setAmount("");
+      setTitle("");
       setStatus("Added");
       revalidator.revalidate();
     } catch (submitError) {
@@ -88,8 +98,8 @@ export function QuickTransactionForm({ month }: { month: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-2">
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 md:grid-cols-[7rem_minmax(0,1fr)_9.5rem_auto]">
+    <form onSubmit={onSubmit} className="space-y-1.5 md:space-y-2">
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5 md:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,9.5rem)_8.5rem_auto] md:gap-2">
         <label className="col-span-3 md:col-span-1">
           <span className="sr-only">Amount</span>
           <Input
@@ -103,8 +113,23 @@ export function QuickTransactionForm({ month }: { month: string }) {
               setStatus(null);
               setError(null);
             }}
-            className="h-11 text-base md:h-9"
+            className="h-10 text-base md:h-9"
             aria-invalid={error === "Enter an amount"}
+          />
+        </label>
+        <label className="col-span-3 md:col-span-1">
+          <span className="sr-only">Title (optional)</span>
+          <Input
+            name="title"
+            autoComplete="off"
+            placeholder="Title (optional)"
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              setStatus(null);
+              setError(null);
+            }}
+            className="h-10 text-base md:h-9"
           />
         </label>
         <label className="col-span-1 md:col-span-1">
@@ -113,7 +138,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
             name="category_id"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="h-11 md:h-9"
+            className="h-10 md:h-9"
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -129,14 +154,14 @@ export function QuickTransactionForm({ month }: { month: string }) {
             name="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="h-11 text-base md:h-9"
+            className="h-10 text-base md:h-9"
           />
         </label>
         <Button
           type="submit"
           disabled={disabled}
           size="lg"
-          className="h-11 min-w-11 px-3 md:h-9"
+          className="h-10 min-w-10 px-3 md:h-9"
           aria-label="Add transaction"
         >
           <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" />
@@ -146,7 +171,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
       <p
         className={cn(
           "min-h-4 text-center text-xs",
-          error ? "text-destructive" : "text-muted-foreground"
+          error ? "text-destructive" : status ? "text-muted-foreground" : "sr-only"
         )}
         aria-live="polite"
       >

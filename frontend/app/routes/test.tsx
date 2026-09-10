@@ -89,6 +89,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
         amount: sample.amount,
         date: new Date().toISOString().slice(0, 10),
         category_id: categoryId,
+        title: sample.title,
       });
     }, `Added transaction for barcode ${sample.barcode}`);
   }
@@ -272,6 +273,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Category</TableHead>
@@ -281,7 +283,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground">
                     No transactions yet.
                   </TableCell>
                 </TableRow>
@@ -289,6 +291,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
                 transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>{transaction.id}</TableCell>
+                    <TableCell>{transaction.title ?? "—"}</TableCell>
                     <TableCell>${transaction.amount}</TableCell>
                     <TableCell>{transaction.date}</TableCell>
                     <TableCell>{transaction.category_id}</TableCell>
