@@ -1,8 +1,20 @@
+import { getStoredSecret } from "~/lib/auth"
+
+export interface PublicAccount {
+  id: number
+  name: string
+}
+
+export interface Account extends PublicAccount {
+  secret: string
+}
+
 export interface Category {
   id: number
   title: string
   parent_id: number | null
   monthly_budget: string | null
+  account_id: number
 }
 
 export interface Transaction {
@@ -11,6 +23,15 @@ export interface Transaction {
   date: string
   category_id: number
   title: string | null
+  account_id: number
+}
+
+export interface CreateAccountInput {
+  name: string
+}
+
+export interface AuthAccountInput {
+  secret: string
 }
 
 export interface CreateCategoryInput {
@@ -39,6 +60,16 @@ export interface UpdateTransactionInput {
   title?: string | null
 }
 
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
+}
+
 function getBrowserApiBase(): string {
   return import.meta.env.VITE_API_URL ?? "/api"
 }
@@ -51,28 +82,43 @@ export function getApiBase(isServer = typeof window === "undefined"): string {
   return isServer ? getServerApiBase() : getBrowserApiBase()
 }
 
+type RequestOptions = RequestInit & {
+  secret?: string | null
+}
+
 async function request<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestOptions = {},
   isServer = typeof window === "undefined"
 ): Promise<T> {
   const base = getApiBase(isServer)
   const headers = new Headers(options.headers)
+  const { secret, ...fetchOptions } = options
 
   // Fastify rejects empty bodies when Content-Type is application/json
   // (FST_ERR_CTP_EMPTY_JSON_BODY → 400). Only set it when sending a body.
-  if (options.body != null && !headers.has("Content-Type")) {
+  if (fetchOptions.body != null && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }
 
+  const authSecret =
+    secret === undefined ? (isServer ? null : getStoredSecret()) : secret
+
+  if (authSecret && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${authSecret}`)
+  }
+
   const response = await fetch(`${base}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   })
 
   if (!response.ok) {
     const message = await response.text()
-    throw new Error(message || `Request failed with status ${response.status}`)
+    throw new ApiError(
+      message || `Request failed with status ${response.status}`,
+      response.status
+    )
   }
 
   if (response.status === 204) {
@@ -83,8 +129,20 @@ async function request<T>(
 }
 
 export const api = {
-  listCategories: (isServer?: boolean) =>
-    request<Category[]>("/categories", {}, isServer),
+  createAccount: (data: CreateAccountInput) =>
+    request<Account>("/accounts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  authenticate: (data: AuthAccountInput) =>
+    request<PublicAccount>("/accounts/auth", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getMe: (secret: string, isServer?: boolean) =>
+    request<PublicAccount>("/accounts/me", { secret }, isServer),
+  listCategories: (secret: string, isServer?: boolean) =>
+    request<Category[]>("/categories", { secret }, isServer),
   createCategory: (data: CreateCategoryInput) =>
     request<Category>("/categories", {
       method: "POST",
@@ -97,8 +155,8 @@ export const api = {
     }),
   deleteCategory: (id: number) =>
     request<void>(`/categories/${id}`, { method: "DELETE" }),
-  listTransactions: (isServer?: boolean) =>
-    request<Transaction[]>("/transactions", {}, isServer),
+  listTransactions: (secret: string, isServer?: boolean) =>
+    request<Transaction[]>("/transactions", { secret }, isServer),
   createTransaction: (data: CreateTransactionInput) =>
     request<Transaction>("/transactions", {
       method: "POST",
