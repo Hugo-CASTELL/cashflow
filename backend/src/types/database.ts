@@ -2,6 +2,7 @@ export interface Category {
   id: number
   title: string
   parent_id: number | null
+  monthly_budget: string | null
 }
 
 export interface Transaction {
@@ -14,11 +15,13 @@ export interface Transaction {
 export interface CreateCategoryInput {
   title: string
   parent_id?: number | null
+  monthly_budget?: number | string | null
 }
 
 export interface UpdateCategoryInput {
   title?: string
   parent_id?: number | null
+  monthly_budget?: number | string | null
 }
 
 export interface CreateTransactionInput {

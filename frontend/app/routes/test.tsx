@@ -119,7 +119,7 @@ export default function TestPage({ loaderData }: Route.ComponentProps) {
           Add barcoded categories and transactions to verify the backend CRUD API.
         </p>
         <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
-          Back home
+          Back to overview
         </Button>
       </div>
 
