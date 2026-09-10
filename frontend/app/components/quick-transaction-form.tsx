@@ -98,8 +98,8 @@ export function QuickTransactionForm({ month }: { month: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-2">
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 md:grid-cols-[6.5rem_minmax(0,1fr)_minmax(0,1fr)_9.5rem_auto]">
+    <form onSubmit={onSubmit} className="space-y-1.5 md:space-y-2">
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5 md:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,9.5rem)_8.5rem_auto] md:gap-2">
         <label className="col-span-3 md:col-span-1">
           <span className="sr-only">Amount</span>
           <Input
@@ -113,7 +113,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
               setStatus(null);
               setError(null);
             }}
-            className="h-11 text-base md:h-9"
+            className="h-10 text-base md:h-9"
             aria-invalid={error === "Enter an amount"}
           />
         </label>
@@ -129,7 +129,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
               setStatus(null);
               setError(null);
             }}
-            className="h-11 text-base md:h-9"
+            className="h-10 text-base md:h-9"
           />
         </label>
         <label className="col-span-1 md:col-span-1">
@@ -138,7 +138,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
             name="category_id"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="h-11 md:h-9"
+            className="h-10 md:h-9"
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -154,14 +154,14 @@ export function QuickTransactionForm({ month }: { month: string }) {
             name="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="h-11 text-base md:h-9"
+            className="h-10 text-base md:h-9"
           />
         </label>
         <Button
           type="submit"
           disabled={disabled}
           size="lg"
-          className="h-11 min-w-11 px-3 md:h-9"
+          className="h-10 min-w-10 px-3 md:h-9"
           aria-label="Add transaction"
         >
           <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" />
@@ -171,7 +171,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
       <p
         className={cn(
           "min-h-4 text-center text-xs",
-          error ? "text-destructive" : "text-muted-foreground"
+          error ? "text-destructive" : status ? "text-muted-foreground" : "sr-only"
         )}
         aria-live="polite"
       >

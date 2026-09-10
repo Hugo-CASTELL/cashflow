@@ -16,7 +16,7 @@ export function MonthSwitcher({
         type="button"
         variant="ghost"
         size="icon-lg"
-        className="size-11 md:size-9"
+        className="size-10 md:size-9"
         aria-label="Previous month"
         onClick={() => onChange(shiftMonth(month, -1))}
       >
@@ -29,7 +29,7 @@ export function MonthSwitcher({
         type="button"
         variant="ghost"
         size="icon-lg"
-        className="size-11 md:size-9"
+        className="size-10 md:size-9"
         aria-label="Next month"
         onClick={() => onChange(shiftMonth(month, 1))}
       >
