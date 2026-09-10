@@ -110,7 +110,7 @@ export function ExpenseChart({
   }, [hoveredId, slices, total]);
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[18rem] sm:max-w-[20rem]">
+    <div className="relative mx-auto aspect-square w-full max-w-[18rem] overflow-visible p-1 sm:max-w-[20rem]">
       <svg viewBox="0 0 100 100" className="size-full overflow-visible" role="img" aria-label="Expenses by category">
         <circle
           cx="50"

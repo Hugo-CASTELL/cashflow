@@ -24,7 +24,7 @@ export default function Home() {
   const right = items.slice(midpoint);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex min-h-[calc(100dvh-17.5rem)] flex-col md:min-h-[calc(100dvh-12.5rem)]">
       <div className="flex shrink-0 items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -41,7 +41,7 @@ export default function Home() {
       </div>
 
       {categories.length === 0 ? (
-        <div className="mt-5 flex flex-1 flex-col justify-center">
+        <div className="flex flex-1 flex-col justify-center py-6">
           <div className="rounded-2xl bg-muted/50 px-4 py-12 text-center">
             <p className="font-medium">No categories yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -56,9 +56,9 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col justify-center py-4">
+        <div className="flex flex-1 flex-col justify-center py-6">
           <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)_minmax(0,1fr)] lg:gap-6">
-            <div className="hidden max-h-[min(32rem,58dvh)] space-y-2 overflow-y-auto lg:block">
+            <div className="hidden max-h-[min(32rem,50dvh)] space-y-2 overflow-y-auto lg:block">
               {left.map((item) => (
                 <CategoryBudgetCard
                   key={item.category.id}
@@ -81,7 +81,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="hidden max-h-[min(32rem,58dvh)] space-y-2 overflow-y-auto lg:block">
+            <div className="hidden max-h-[min(32rem,50dvh)] space-y-2 overflow-y-auto lg:block">
               {right.map((item) => (
                 <CategoryBudgetCard
                   key={item.category.id}
