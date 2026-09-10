@@ -1,7 +1,6 @@
 import { type FormEvent, useState } from "react"
 import { redirect, useNavigate, useSearchParams } from "react-router"
 import type { Route } from "./+types/auth"
-import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { api, ApiError } from "~/lib/api"
 import {
@@ -59,12 +58,16 @@ function parseApiErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+const fieldClassName =
+  "h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+const primaryButtonClassName =
+  "inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+
 export default function AuthPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState<"signin" | "create">("signin")
-  const [secret, setSecret] = useState("")
-  const [name, setName] = useState("")
   const [createdSecret, setCreatedSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -76,7 +79,8 @@ export default function AuthPage() {
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const nextSecret = secret.trim()
+    const formData = new FormData(event.currentTarget)
+    const nextSecret = String(formData.get("secret") ?? "").trim()
     if (!nextSecret) {
       setError("Secret is required")
       return
@@ -99,7 +103,8 @@ export default function AuthPage() {
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const nextName = name.trim()
+    const formData = new FormData(event.currentTarget)
+    const nextName = String(formData.get("name") ?? "").trim()
     if (!nextName) {
       setError("Name is required")
       return
@@ -153,7 +158,7 @@ export default function AuthPage() {
               </div>
               <button
                 type="button"
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                className={primaryButtonClassName}
                 onClick={() => navigate(nextPath, { replace: true })}
               >
                 Continue to app
@@ -198,15 +203,14 @@ export default function AuthPage() {
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="secret">Account secret</Label>
-                    <Input
+                    <input
                       id="secret"
                       name="secret"
                       type="password"
                       autoComplete="current-password"
                       placeholder="Paste your secret"
-                      value={secret}
-                      onChange={(event) => setSecret(event.target.value)}
                       required
+                      className={fieldClassName}
                     />
                   </div>
                   {error ? (
@@ -217,7 +221,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={pending}
-                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                    className={primaryButtonClassName}
                   >
                     {pending ? "Checking…" : "Sign in"}
                   </button>
@@ -226,15 +230,14 @@ export default function AuthPage() {
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Account name</Label>
-                    <Input
+                    <input
                       id="name"
                       name="name"
                       type="text"
                       autoComplete="organization"
                       placeholder="Household, Travel, …"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
                       required
+                      className={fieldClassName}
                     />
                   </div>
                   {error ? (
@@ -245,7 +248,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={pending}
-                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                    className={primaryButtonClassName}
                   >
                     {pending ? "Creating…" : "Create account"}
                   </button>
