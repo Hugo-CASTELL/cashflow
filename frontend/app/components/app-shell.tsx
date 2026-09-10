@@ -18,9 +18,9 @@ export function AppShell({
     <AppDataProvider value={data}>
       <div className="flex min-h-dvh flex-col bg-background">
         <TopNav month={month} />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-[calc(13.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 md:pb-[calc(9.5rem+env(safe-area-inset-bottom))]">
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-3 pb-[calc(16.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 md:pb-[calc(10.5rem+env(safe-area-inset-bottom))]">
           {data.loadError ? (
-            <p className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="mb-4 shrink-0 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {data.loadError}
             </p>
           ) : null}

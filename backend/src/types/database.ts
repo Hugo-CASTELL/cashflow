@@ -10,6 +10,7 @@ export interface Transaction {
   amount: string
   date: string
   category_id: number
+  title: string | null
 }
 
 export interface CreateCategoryInput {
@@ -28,10 +29,12 @@ export interface CreateTransactionInput {
   amount: number | string
   date: string
   category_id: number
+  title?: string | null
 }
 
 export interface UpdateTransactionInput {
   amount?: number | string
   date?: string
   category_id?: number
+  title?: string | null
 }

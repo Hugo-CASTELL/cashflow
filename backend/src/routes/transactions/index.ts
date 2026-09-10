@@ -5,6 +5,8 @@ import type {
   UpdateTransactionInput
 } from '../../types/database'
 
+const TRANSACTION_COLUMNS = 'id, amount::text, date::text, category_id, title'
+
 function parseTransactionId (id: string): number | null {
   const parsed = Number(id)
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -52,6 +54,23 @@ function parseCategoryId (categoryId: unknown): number | null {
   return parsed
 }
 
+function parseTitle (title: unknown): string | null | undefined {
+  if (title === undefined) {
+    return undefined
+  }
+
+  if (title === null) {
+    return null
+  }
+
+  if (typeof title !== 'string') {
+    return undefined
+  }
+
+  const trimmed = title.trim()
+  return trimmed === '' ? null : trimmed
+}
+
 async function categoryExists (
   fastify: Parameters<FastifyPluginAsync>[0],
   categoryId: number
@@ -67,7 +86,7 @@ async function categoryExists (
 const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get('/', async () => {
     const result = await fastify.pg.query<Transaction>(
-      'SELECT id, amount::text, date::text, category_id FROM transactions ORDER BY date DESC, id DESC'
+      `SELECT ${TRANSACTION_COLUMNS} FROM transactions ORDER BY date DESC, id DESC`
     )
 
     return result.rows
@@ -81,7 +100,7 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Transaction>(
-      'SELECT id, amount::text, date::text, category_id FROM transactions WHERE id = $1',
+      `SELECT ${TRANSACTION_COLUMNS} FROM transactions WHERE id = $1`,
       [id]
     )
 
@@ -93,11 +112,12 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
   })
 
   fastify.post<{ Body: CreateTransactionInput }>('/', async (request, reply) => {
-    const { amount, date, category_id: categoryId } = request.body ?? {}
+    const { amount, date, category_id: categoryId, title } = request.body ?? {}
 
     const parsedAmount = parseAmount(amount)
     const parsedDate = parseDate(date)
     const parsedCategoryId = parseCategoryId(categoryId)
+    const parsedTitle = parseTitle(title)
 
     if (parsedAmount === null) {
       return reply.badRequest('Invalid amount')
@@ -111,13 +131,17 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
       return reply.badRequest('Invalid category_id')
     }
 
+    if (title !== undefined && parsedTitle === undefined) {
+      return reply.badRequest('Invalid title')
+    }
+
     if (!(await categoryExists(fastify, parsedCategoryId))) {
       return reply.badRequest('Category not found')
     }
 
     const result = await fastify.pg.query<Transaction>(
-      'INSERT INTO transactions (amount, date, category_id) VALUES ($1, $2, $3) RETURNING id, amount::text, date::text, category_id',
-      [parsedAmount, parsedDate, parsedCategoryId]
+      `INSERT INTO transactions (amount, date, category_id, title) VALUES ($1, $2, $3, $4) RETURNING ${TRANSACTION_COLUMNS}`,
+      [parsedAmount, parsedDate, parsedCategoryId, parsedTitle ?? null]
     )
 
     return reply.code(201).send(result.rows[0])
@@ -132,14 +156,19 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
         return reply.badRequest('Invalid transaction id')
       }
 
-      const { amount, date, category_id: categoryId } = request.body ?? {}
+      const { amount, date, category_id: categoryId, title } = request.body ?? {}
 
-      if (amount === undefined && date === undefined && categoryId === undefined) {
+      if (
+        amount === undefined &&
+        date === undefined &&
+        categoryId === undefined &&
+        title === undefined
+      ) {
         return reply.badRequest('At least one field is required')
       }
 
       const existing = await fastify.pg.query<Transaction>(
-        'SELECT id, amount::text, date::text, category_id FROM transactions WHERE id = $1',
+        `SELECT ${TRANSACTION_COLUMNS} FROM transactions WHERE id = $1`,
         [id]
       )
 
@@ -153,6 +182,7 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
       const parsedCategoryId = categoryId === undefined
         ? current.category_id
         : parseCategoryId(categoryId)
+      const parsedTitle = title === undefined ? current.title : parseTitle(title)
 
       if (parsedAmount === null) {
         return reply.badRequest('Invalid amount')
@@ -166,13 +196,17 @@ const transactions: FastifyPluginAsync = async (fastify): Promise<void> => {
         return reply.badRequest('Invalid category_id')
       }
 
+      if (title !== undefined && parsedTitle === undefined) {
+        return reply.badRequest('Invalid title')
+      }
+
       if (!(await categoryExists(fastify, parsedCategoryId))) {
         return reply.badRequest('Category not found')
       }
 
       const result = await fastify.pg.query<Transaction>(
-        'UPDATE transactions SET amount = $1, date = $2, category_id = $3 WHERE id = $4 RETURNING id, amount::text, date::text, category_id',
-        [parsedAmount, parsedDate, parsedCategoryId, id]
+        `UPDATE transactions SET amount = $1, date = $2, category_id = $3, title = $4 WHERE id = $5 RETURNING ${TRANSACTION_COLUMNS}`,
+        [parsedAmount, parsedDate, parsedCategoryId, parsedTitle ?? null, id]
       )
 
       return result.rows[0]

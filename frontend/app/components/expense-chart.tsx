@@ -67,6 +67,13 @@ export function ExpenseChart({
   const total = slices.reduce((sum, item) => sum + item.spent, 0);
   const recapHref = monthHref("/recap", month);
 
+  // Keep the ring inside the 100×100 viewBox: stroke is centered on the path,
+  // so r + strokeWidth/2 must stay ≤ 50 (with a little padding for hover grow).
+  const outer = 42;
+  const inner = 28;
+  const hoverOuter = 43.5;
+  const trackStroke = 12;
+
   const paths = useMemo(() => {
     if (slices.length === 0 || total <= 0) {
       return [];
@@ -76,7 +83,7 @@ export function ExpenseChart({
       return [
         {
           item: slices[0],
-          d: donutSlicePath(50, 50, 31, 46, 0, 359.99),
+          d: donutSlicePath(50, 50, inner, outer, 0, 359.99),
         },
       ];
     }
@@ -90,15 +97,30 @@ export function ExpenseChart({
       angle += sweep;
       return {
         item,
-        d: donutSlicePath(50, 50, 31, hoveredId === item.category.id ? 47.5 : 46, start, Math.max(end, start + 0.4)),
+        d: donutSlicePath(
+          50,
+          50,
+          inner,
+          hoveredId === item.category.id ? hoverOuter : outer,
+          start,
+          Math.max(end, start + 0.4)
+        ),
       };
     });
   }, [hoveredId, slices, total]);
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[18rem] sm:max-w-[20rem]">
-      <svg viewBox="0 0 100 100" className="size-full" role="img" aria-label="Expenses by category">
-        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" className="text-muted" strokeWidth="12" />
+      <svg viewBox="0 0 100 100" className="size-full overflow-visible" role="img" aria-label="Expenses by category">
+        <circle
+          cx="50"
+          cy="50"
+          r={outer}
+          fill="none"
+          stroke="currentColor"
+          className="text-muted"
+          strokeWidth={trackStroke}
+        />
         {paths.map(({ item, d }) => (
           <SliceLink
             key={item.category.id}

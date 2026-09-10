@@ -14,6 +14,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
   const { categories } = useAppData();
   const revalidator = useRevalidator();
   const [amount, setAmount] = useState("");
+  const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(() => defaultDateForMonth(month));
   const [status, setStatus] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
     event.preventDefault();
     const parsedAmount = Number(amount);
     const parsedCategoryId = Number(categoryId);
+    const trimmedTitle = title.trim();
 
     if (!Number.isFinite(parsedAmount) || parsedAmount === 0) {
       setError("Enter an amount");
@@ -65,8 +67,10 @@ export function QuickTransactionForm({ month }: { month: string }) {
         amount: parsedAmount,
         date,
         category_id: parsedCategoryId,
+        title: trimmedTitle === "" ? null : trimmedTitle,
       });
       setAmount("");
+      setTitle("");
       setStatus("Added");
       revalidator.revalidate();
     } catch (submitError) {
@@ -89,7 +93,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-2">
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 md:grid-cols-[7rem_minmax(0,1fr)_9.5rem_auto]">
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 md:grid-cols-[6.5rem_minmax(0,1fr)_minmax(0,1fr)_9.5rem_auto]">
         <label className="col-span-3 md:col-span-1">
           <span className="sr-only">Amount</span>
           <Input
@@ -105,6 +109,21 @@ export function QuickTransactionForm({ month }: { month: string }) {
             }}
             className="h-11 text-base md:h-9"
             aria-invalid={error === "Enter an amount"}
+          />
+        </label>
+        <label className="col-span-3 md:col-span-1">
+          <span className="sr-only">Title (optional)</span>
+          <Input
+            name="title"
+            autoComplete="off"
+            placeholder="Title (optional)"
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              setStatus(null);
+              setError(null);
+            }}
+            className="h-11 text-base md:h-9"
           />
         </label>
         <label className="col-span-1 md:col-span-1">
