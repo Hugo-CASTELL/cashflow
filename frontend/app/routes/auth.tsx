@@ -1,7 +1,6 @@
 import { type FormEvent, useState } from "react"
 import { redirect, useNavigate, useSearchParams } from "react-router"
 import type { Route } from "./+types/auth"
-import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { api, ApiError } from "~/lib/api"
@@ -10,6 +9,7 @@ import {
   getSecretFromRequest,
   persistSession,
 } from "~/lib/auth"
+import { cn } from "~/lib/utils"
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -38,6 +38,27 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 }
 
+function parseApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && error.status === 401) {
+    return "That secret is not valid."
+  }
+
+  if (error instanceof Error) {
+    try {
+      const parsed = JSON.parse(error.message) as { message?: string }
+      if (parsed.message) {
+        return parsed.message
+      }
+    } catch {
+      // not JSON
+    }
+
+    return error.message || fallback
+  }
+
+  return fallback
+}
+
 export default function AuthPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -55,22 +76,22 @@ export default function AuthPage() {
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const nextSecret = secret.trim()
+    if (!nextSecret) {
+      setError("Secret is required")
+      return
+    }
+
     setError(null)
     setPending(true)
 
     try {
-      const account = await api.authenticate({ secret: secret.trim() })
-      persistSession(secret.trim(), account.name)
+      const account = await api.authenticate({ secret: nextSecret })
+      persistSession(nextSecret, account.name)
       navigate(nextPath, { replace: true })
     } catch (err) {
       clearSession()
-      setError(
-        err instanceof ApiError && err.status === 401
-          ? "That secret is not valid."
-          : err instanceof Error
-            ? err.message
-            : "Could not sign in"
-      )
+      setError(parseApiErrorMessage(err, "Could not sign in"))
     } finally {
       setPending(false)
     }
@@ -78,15 +99,21 @@ export default function AuthPage() {
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const nextName = name.trim()
+    if (!nextName) {
+      setError("Name is required")
+      return
+    }
+
     setError(null)
     setPending(true)
 
     try {
-      const account = await api.createAccount({ name: name.trim() })
+      const account = await api.createAccount({ name: nextName })
       setCreatedSecret(account.secret)
       persistSession(account.secret, account.name)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create account")
+      setError(parseApiErrorMessage(err, "Could not create account"))
     } finally {
       setPending(false)
     }
@@ -124,24 +151,25 @@ export default function AuthPage() {
                   className="min-h-24 w-full rounded-lg border border-input bg-muted/40 px-2.5 py-2 font-mono text-xs leading-relaxed"
                 />
               </div>
-              <Button
+              <button
                 type="button"
-                className="w-full"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
                 onClick={() => navigate(nextPath, { replace: true })}
               >
                 Continue to app
-              </Button>
+              </button>
             </div>
           ) : (
             <>
               <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
                 <button
                   type="button"
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     mode === "signin"
                       ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground"
-                  }`}
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                   onClick={() => {
                     setMode("signin")
                     setError(null)
@@ -151,11 +179,12 @@ export default function AuthPage() {
                 </button>
                 <button
                   type="button"
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     mode === "create"
                       ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground"
-                  }`}
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                   onClick={() => {
                     setMode("create")
                     setError(null)
@@ -181,11 +210,17 @@ export default function AuthPage() {
                     />
                   </div>
                   {error ? (
-                    <p className="text-sm text-destructive">{error}</p>
+                    <p className="text-sm text-destructive" role="alert">
+                      {error}
+                    </p>
                   ) : null}
-                  <Button type="submit" className="w-full" disabled={pending}>
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                  >
                     {pending ? "Checking…" : "Sign in"}
-                  </Button>
+                  </button>
                 </form>
               ) : (
                 <form onSubmit={handleCreate} className="space-y-4">
@@ -203,11 +238,17 @@ export default function AuthPage() {
                     />
                   </div>
                   {error ? (
-                    <p className="text-sm text-destructive">{error}</p>
+                    <p className="text-sm text-destructive" role="alert">
+                      {error}
+                    </p>
                   ) : null}
-                  <Button type="submit" className="w-full" disabled={pending}>
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                  >
                     {pending ? "Creating…" : "Create account"}
-                  </Button>
+                  </button>
                 </form>
               )}
             </>
