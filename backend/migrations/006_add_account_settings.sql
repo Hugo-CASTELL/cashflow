@@ -1,0 +1,4 @@
+ALTER TABLE accounts
+  ADD COLUMN currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+  ADD COLUMN budget_display VARCHAR(16) NOT NULL DEFAULT 'percent',
+  ADD COLUMN chart_type VARCHAR(16) NOT NULL DEFAULT 'donut';
