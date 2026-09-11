@@ -1,5 +1,10 @@
 import { type FastifyPluginAsync } from 'fastify'
-import type { Account, PublicAccount } from '../../plugins/auth'
+import { ACCOUNT_COLUMNS, type Account, type PublicAccount } from '../../plugins/auth'
+import {
+  parseBudgetDisplay,
+  parseChartType,
+  parseCurrency
+} from '../../lib/account-settings'
 
 interface CreateAccountBody {
   name?: string
@@ -9,10 +14,19 @@ interface AuthBody {
   secret?: string
 }
 
+interface UpdateSettingsBody {
+  currency?: string
+  budget_display?: string
+  chart_type?: string
+}
+
 function toPublicAccount (account: Account): PublicAccount {
   return {
     id: account.id,
-    name: account.name
+    name: account.name,
+    currency: account.currency,
+    budget_display: account.budget_display,
+    chart_type: account.chart_type
   }
 }
 
@@ -30,7 +44,7 @@ const accounts: FastifyPluginAsync = async (fastify): Promise<void> => {
 
     const secret = fastify.generateAccountSecret()
     const result = await fastify.pg.query<Account>(
-      'INSERT INTO accounts (name, secret) VALUES ($1, $2) RETURNING id, name, secret',
+      `INSERT INTO accounts (name, secret) VALUES ($1, $2) RETURNING ${ACCOUNT_COLUMNS}`,
       [name, secret]
     )
 
@@ -45,7 +59,7 @@ const accounts: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Account>(
-      'SELECT id, name, secret FROM accounts WHERE secret = $1',
+      `SELECT ${ACCOUNT_COLUMNS} FROM accounts WHERE secret = $1`,
       [secret]
     )
 
@@ -63,6 +77,46 @@ const accounts: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     return toPublicAccount(account)
+  })
+
+  fastify.patch<{ Body: UpdateSettingsBody }>('/me', async (request, reply) => {
+    const account = await fastify.requireAccount(request, reply)
+    if (account === null) {
+      return
+    }
+
+    const {
+      currency,
+      budget_display: budgetDisplay,
+      chart_type: chartType
+    } = request.body ?? {}
+
+    if (currency === undefined && budgetDisplay === undefined && chartType === undefined) {
+      return reply.badRequest('At least one field is required')
+    }
+
+    const nextCurrency = currency === undefined ? account.currency : parseCurrency(currency)
+    if (nextCurrency === null) {
+      return reply.badRequest('Invalid currency: expected a three-letter ISO 4217 code')
+    }
+
+    const nextBudgetDisplay =
+      budgetDisplay === undefined ? account.budget_display : parseBudgetDisplay(budgetDisplay)
+    if (nextBudgetDisplay === null) {
+      return reply.badRequest('Invalid budget_display: expected "percent" or "currency"')
+    }
+
+    const nextChartType = chartType === undefined ? account.chart_type : parseChartType(chartType)
+    if (nextChartType === null) {
+      return reply.badRequest('Invalid chart_type: expected "donut", "pie" or "bar"')
+    }
+
+    const result = await fastify.pg.query<Account>(
+      `UPDATE accounts SET currency = $1, budget_display = $2, chart_type = $3 WHERE id = $4 RETURNING ${ACCOUNT_COLUMNS}`,
+      [nextCurrency, nextBudgetDisplay, nextChartType, account.id]
+    )
+
+    return toPublicAccount(result.rows[0])
   })
 }
 

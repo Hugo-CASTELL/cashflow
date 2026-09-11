@@ -5,11 +5,11 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { NativeSelect } from "~/components/native-select";
-import { useAppData } from "~/components/app-data";
+import { useAppData, useMoney } from "~/components/app-data";
 import { api, type Category } from "~/lib/api";
 import { colorForCategory } from "~/lib/colors";
 import { parentTitle } from "~/lib/finance";
-import { formatMoney, parseMoney } from "~/lib/money";
+import { currencySymbol, parseMoney } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
 export function meta({}: Route.MetaArgs) {
@@ -21,6 +21,8 @@ export function meta({}: Route.MetaArgs) {
 
 export default function CategoriesPage() {
   const { categories, transactions } = useAppData();
+  const money = useMoney();
+  const symbol = currencySymbol(money.currency);
   const revalidator = useRevalidator();
   const [title, setTitle] = useState("");
   const [parentId, setParentId] = useState("");
@@ -130,7 +132,7 @@ export default function CategoriesPage() {
             </NativeSelect>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="category-budget">Monthly budget</Label>
+            <Label htmlFor="category-budget">Monthly budget ({symbol})</Label>
             <Input
               id="category-budget"
               inputMode="decimal"
@@ -176,7 +178,7 @@ export default function CategoriesPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {parent ? `In ${parent}` : "Top-level"}
                       {category.monthly_budget
-                        ? ` · ${formatMoney(parseMoney(category.monthly_budget))} / month`
+                        ? ` · ${money.format(parseMoney(category.monthly_budget))} / month`
                         : " · no budget"}
                     </p>
                   </div>
@@ -195,7 +197,7 @@ export default function CategoriesPage() {
                 </div>
                 <div className="flex items-end gap-2">
                   <label className="min-w-0 flex-1 space-y-1">
-                    <span className="text-xs text-muted-foreground">Monthly budget</span>
+                    <span className="text-xs text-muted-foreground">Monthly budget ({symbol})</span>
                     <Input
                       inputMode="decimal"
                       value={current}

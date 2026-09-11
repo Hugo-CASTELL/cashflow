@@ -1,8 +1,8 @@
 import { Link } from "react-router";
+import { useMoney, useSettings } from "~/components/app-data";
+import { budgetStatus, type CategorySpend } from "~/lib/finance";
 import { monthHref } from "~/lib/month";
-import { formatMoney } from "~/lib/money";
 import { cn } from "~/lib/utils";
-import type { CategorySpend } from "~/lib/finance";
 
 export function CategoryBudgetCard({
   item,
@@ -13,8 +13,9 @@ export function CategoryBudgetCard({
   month: string;
   active?: boolean;
 }) {
-  const percent =
-    item.ratio == null ? null : Math.round(Math.min(item.ratio, 2) * 100);
+  const money = useMoney();
+  const { budgetDisplay } = useSettings();
+  const status = budgetStatus(item, budgetDisplay, money);
   const width = item.ratio == null ? 0 : Math.min(item.ratio * 100, 100);
 
   return (
@@ -38,17 +39,17 @@ export function CategoryBudgetCard({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {item.budget == null
-              ? `${formatMoney(item.spent)} spent`
-              : `${formatMoney(item.spent)} of ${formatMoney(item.budget)}`}
+              ? `${money.format(item.spent)} spent`
+              : `${money.format(item.spent)} of ${money.format(item.budget)}`}
           </p>
         </div>
         <p
           className={cn(
-            "shrink-0 text-xs font-medium",
-            item.overBudget ? "text-destructive" : "text-muted-foreground"
+            "shrink-0 text-xs font-medium tabular-nums",
+            status?.over ? "text-destructive" : "text-muted-foreground"
           )}
         >
-          {percent == null ? "No budget" : item.overBudget ? `${percent}% over` : `${percent}%`}
+          {status == null ? "No budget" : status.label}
         </p>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">

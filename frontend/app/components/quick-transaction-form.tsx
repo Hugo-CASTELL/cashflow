@@ -5,13 +5,15 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { NativeSelect } from "~/components/native-select";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { useAppData } from "~/components/app-data";
+import { useAppData, useMoney } from "~/components/app-data";
 import { api } from "~/lib/api";
 import { defaultDateForMonth, monthHref } from "~/lib/month";
+import { currencySymbol } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
 export function QuickTransactionForm({ month }: { month: string }) {
   const { categories } = useAppData();
+  const money = useMoney();
   const revalidator = useRevalidator();
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
@@ -106,7 +108,7 @@ export function QuickTransactionForm({ month }: { month: string }) {
             name="amount"
             inputMode="decimal"
             autoComplete="off"
-            placeholder="Amount"
+            placeholder={`Amount (${currencySymbol(money.currency)})`}
             value={amount}
             onChange={(event) => {
               setAmount(event.target.value);

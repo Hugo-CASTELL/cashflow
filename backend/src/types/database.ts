@@ -1,12 +1,20 @@
-export interface Account {
+import type { AccountSettings, BudgetDisplay, ChartType } from '../lib/account-settings'
+
+export interface Account extends AccountSettings {
   id: number
   name: string
   secret: string
 }
 
-export interface PublicAccount {
+export interface PublicAccount extends AccountSettings {
   id: number
   name: string
+}
+
+export interface UpdateAccountSettingsInput {
+  currency?: string
+  budget_display?: BudgetDisplay
+  chart_type?: ChartType
 }
 
 export interface Category {
