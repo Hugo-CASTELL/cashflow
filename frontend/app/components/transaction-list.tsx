@@ -1,12 +1,13 @@
 import { Link, useRevalidator } from "react-router";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon } from "@hugeicons/core-free-icons";
+import { useMoney } from "~/components/app-data";
 import { Button } from "~/components/ui/button";
 import { api, type Category, type Transaction } from "~/lib/api";
 import { colorForCategory } from "~/lib/colors";
 import { categoryById } from "~/lib/finance";
 import { monthHref } from "~/lib/month";
-import { formatMoney, parseMoney } from "~/lib/money";
+import { parseMoney } from "~/lib/money";
 
 function formatDay(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
@@ -31,6 +32,7 @@ export function TransactionList({
   month: string;
 }) {
   const revalidator = useRevalidator();
+  const money = useMoney();
 
   if (transactions.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -60,7 +62,7 @@ export function TransactionList({
           <section key={date} className="space-y-2">
             <div className="flex items-baseline justify-between gap-3 px-1">
               <h2 className="text-sm font-medium">{formatDay(date)}</h2>
-              <p className="text-xs text-muted-foreground">{formatMoney(dayTotal)}</p>
+              <p className="text-xs text-muted-foreground">{money.format(dayTotal)}</p>
             </div>
             <ul className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
               {rows.map((transaction) => {
@@ -106,7 +108,7 @@ export function TransactionList({
                       )}
                     </div>
                     <p className="shrink-0 font-medium tabular-nums">
-                      {formatMoney(parseMoney(transaction.amount))}
+                      {money.format(parseMoney(transaction.amount))}
                     </p>
                     <Button
                       type="button"

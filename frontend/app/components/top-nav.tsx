@@ -4,6 +4,7 @@ import {
   ChartRingIcon,
   Invoice01Icon,
   Logout03Icon,
+  Settings01Icon,
   TagsIcon,
 } from "@hugeicons/core-free-icons";
 import { useAppData } from "~/components/app-data";
@@ -54,17 +55,32 @@ export function TopNav({ month }: { month: string }) {
             </NavLink>
           ))}
         </nav>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0 text-muted-foreground"
-          aria-label="Sign out"
-          title="Sign out"
-          onClick={handleSignOut}
-        >
-          <HugeiconsIcon icon={Logout03Icon} size={16} strokeWidth={2} />
-        </Button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <NavLink
+            to={monthHref("/settings", month)}
+            aria-label="Settings"
+            title="Settings"
+            className={({ isActive }) =>
+              cn(
+                "inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                isActive && "bg-muted text-foreground"
+              )
+            }
+          >
+            <HugeiconsIcon icon={Settings01Icon} size={16} strokeWidth={2} />
+          </NavLink>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground"
+            aria-label="Sign out"
+            title="Sign out"
+            onClick={handleSignOut}
+          >
+            <HugeiconsIcon icon={Logout03Icon} size={16} strokeWidth={2} />
+          </Button>
+        </div>
       </div>
     </header>
   );

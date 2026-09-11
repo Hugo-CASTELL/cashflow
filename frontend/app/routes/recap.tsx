@@ -1,11 +1,11 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/recap";
-import { useAppData } from "~/components/app-data";
+import { useAppData, useMoney } from "~/components/app-data";
 import { TransactionList } from "~/components/transaction-list";
 import { useSelectedMonth } from "~/hooks/use-selected-month";
 import { categorySpendList, monthTransactions } from "~/lib/finance";
 import { formatMonthLabel, monthHref } from "~/lib/month";
-import { formatMoney, parseMoney } from "~/lib/money";
+import { parseMoney } from "~/lib/money";
 import { colorForCategory } from "~/lib/colors";
 
 export function meta({}: Route.MetaArgs) {
@@ -17,6 +17,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Recap() {
   const { categories, transactions } = useAppData();
+  const money = useMoney();
   const [month] = useSelectedMonth();
   const rows = monthTransactions(transactions, month);
   const total = rows.reduce((sum, row) => sum + parseMoney(row.amount), 0);
@@ -32,7 +33,7 @@ export default function Recap() {
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">Month recap</h1>
         <p className="text-sm text-muted-foreground">
-          {rows.length} transaction{rows.length === 1 ? "" : "s"} · {formatMoney(total)}
+          {rows.length} transaction{rows.length === 1 ? "" : "s"} · {money.format(total)}
         </p>
       </header>
 
@@ -52,7 +53,7 @@ export default function Recap() {
                   <span className="truncate text-sm">{item.category.title}</span>
                 </span>
                 <span className="shrink-0 text-sm font-medium tabular-nums">
-                  {formatMoney(item.spent)}
+                  {money.format(item.spent)}
                 </span>
               </Link>
             </li>

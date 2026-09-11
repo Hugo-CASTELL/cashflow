@@ -1,7 +1,8 @@
 import type { Category, Transaction } from "~/lib/api";
 import { colorForCategory } from "~/lib/colors";
 import { isInMonth } from "~/lib/month";
-import { parseMoney } from "~/lib/money";
+import { parseMoney, type MoneyFormatter } from "~/lib/money";
+import type { BudgetDisplay } from "~/lib/settings";
 
 export type CategorySpend = {
   category: Category;
@@ -98,6 +99,36 @@ export function categorySpendList(
       };
     })
     .sort((a, b) => b.spent - a.spent || a.category.title.localeCompare(b.category.title));
+}
+
+export type BudgetStatus = {
+  label: string;
+  over: boolean;
+};
+
+/**
+ * Short label describing budget progress, either as a percentage of the
+ * budget used ("64%", "120% over") or as the amount left in the account's
+ * currency ("$120 left", "$20 over"). Returns null when there is no budget.
+ */
+export function budgetStatus(
+  { spent, budget, ratio }: { spent: number; budget: number | null; ratio: number | null },
+  mode: BudgetDisplay,
+  money: MoneyFormatter
+): BudgetStatus | null {
+  if (budget == null) {
+    return null;
+  }
+
+  const over = spent > budget;
+
+  if (mode === "currency") {
+    const diff = Math.abs(budget - spent);
+    return { label: over ? `${money.format(diff)} over` : `${money.format(diff)} left`, over };
+  }
+
+  const percent = Math.round((ratio ?? 0) * 100);
+  return { label: over ? `${percent}% over` : `${percent}%`, over };
 }
 
 export function transactionsForCategory(

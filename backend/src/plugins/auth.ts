@@ -4,14 +4,17 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 // Ensure Fastify module augmentations (pg, sensible helpers) are visible to ts-node.
 import './database'
 import './sensible'
+import type { AccountSettings } from '../lib/account-settings'
 
-export interface Account {
+export interface Account extends AccountSettings {
   id: number
   name: string
   secret: string
 }
 
 export type PublicAccount = Omit<Account, 'secret'>
+
+export const ACCOUNT_COLUMNS = 'id, name, secret, currency, budget_display, chart_type'
 
 declare module 'fastify' {
   export interface FastifyRequest {
@@ -62,7 +65,7 @@ export default fp(async (fastify) => {
       }
 
       const result = await fastify.pg.query<Account>(
-        'SELECT id, name, secret FROM accounts WHERE secret = $1',
+        `SELECT ${ACCOUNT_COLUMNS} FROM accounts WHERE secret = $1`,
         [secret]
       )
 

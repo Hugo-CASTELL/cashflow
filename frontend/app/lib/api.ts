@@ -3,6 +3,15 @@ import { getStoredSecret } from "~/lib/auth"
 export interface PublicAccount {
   id: number
   name: string
+  currency: string
+  budget_display: string
+  chart_type: string
+}
+
+export interface UpdateSettingsInput {
+  currency?: string
+  budget_display?: string
+  chart_type?: string
 }
 
 export interface Account extends PublicAccount {
@@ -141,6 +150,11 @@ export const api = {
     }),
   getMe: (secret: string, isServer?: boolean) =>
     request<PublicAccount>("/accounts/me", { secret }, isServer),
+  updateSettings: (data: UpdateSettingsInput) =>
+    request<PublicAccount>("/accounts/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   listCategories: (secret: string, isServer?: boolean) =>
     request<Category[]>("/categories", { secret }, isServer),
   createCategory: (data: CreateCategoryInput) =>

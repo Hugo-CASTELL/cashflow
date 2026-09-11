@@ -2,10 +2,11 @@ import { Link, data } from "react-router";
 import type { Route } from "./+types/category-detail";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
-import { useAppData } from "~/components/app-data";
+import { useAppData, useMoney, useSettings } from "~/components/app-data";
 import { TransactionList } from "~/components/transaction-list";
 import { useSelectedMonth } from "~/hooks/use-selected-month";
 import {
+  budgetStatus,
   categoryById,
   collectDescendantIds,
   parentTitle,
@@ -14,7 +15,7 @@ import {
 } from "~/lib/finance";
 import { colorForCategory } from "~/lib/colors";
 import { formatMonthLabel, monthHref } from "~/lib/month";
-import { formatMoney, parseMoney } from "~/lib/money";
+import { parseMoney } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
 export function meta({ params }: Route.MetaArgs) {
@@ -35,6 +36,8 @@ export function loader({ params }: Route.LoaderArgs) {
 
 export default function CategoryDetail({ loaderData }: Route.ComponentProps) {
   const { categories, transactions } = useAppData();
+  const money = useMoney();
+  const { budgetDisplay } = useSettings();
   const [month] = useSelectedMonth();
   const category = categoryById(categories, loaderData.categoryId);
 
@@ -55,6 +58,7 @@ export default function CategoryDetail({ loaderData }: Route.ComponentProps) {
   const budget = category.monthly_budget == null ? null : parseMoney(category.monthly_budget);
   const ratio = budget != null && budget > 0 ? spent / budget : null;
   const over = budget != null && spent > budget;
+  const status = budgetStatus({ spent, budget, ratio }, budgetDisplay, money);
   const parent = parentTitle(categories, category);
   const children = categories.filter((item) => item.parent_id === category.id);
   const descendantIds = collectDescendantIds(categories, category.id);
@@ -82,12 +86,12 @@ export default function CategoryDetail({ loaderData }: Route.ComponentProps) {
           {parent ? ` · in ${parent}` : ""}
         </p>
         <p className="text-lg font-medium tabular-nums">
-          {formatMoney(spent)}
+          {money.format(spent)}
           {budget != null ? (
             <span className={cn("text-sm font-normal", over ? "text-destructive" : "text-muted-foreground")}>
               {" "}
-              of {formatMoney(budget)}
-              {ratio != null ? ` · ${Math.round(ratio * 100)}%` : ""}
+              of {money.format(budget)}
+              {status ? ` · ${status.label}` : ""}
             </span>
           ) : (
             <span className="text-sm font-normal text-muted-foreground"> spent</span>
@@ -120,7 +124,7 @@ export default function CategoryDetail({ loaderData }: Route.ComponentProps) {
                   >
                     <span>{child.title}</span>
                     <span className="text-sm tabular-nums text-muted-foreground">
-                      {formatMoney(childSpent)}
+                      {money.format(childSpent)}
                     </span>
                   </Link>
                 </li>

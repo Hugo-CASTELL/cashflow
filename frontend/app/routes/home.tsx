@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
-import { useAppData } from "~/components/app-data";
+import { useAppData, useSettings } from "~/components/app-data";
 import { CategoryBudgetCard } from "~/components/category-budget-card";
 import { ExpenseChart, useChartHover } from "~/components/expense-chart";
 import { useSelectedMonth } from "~/hooks/use-selected-month";
@@ -16,6 +16,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   const { categories, transactions } = useAppData();
+  const { chartType } = useSettings();
   const [month] = useSelectedMonth();
   const [hoveredId, setHoveredId] = useChartHover();
   const items = categorySpendList(categories, transactions, month);
@@ -75,9 +76,14 @@ export default function Home() {
                 month={month}
                 hoveredId={hoveredId}
                 onHover={setHoveredId}
+                type={chartType}
               />
               <p className="mt-2 max-w-[16rem] text-center text-xs text-muted-foreground">
-                Tap the center for this month&apos;s recap. Tap a slice or category for details.
+                {chartType === "donut"
+                  ? "Tap the center for this month's recap. Tap a slice or category for details."
+                  : chartType === "pie"
+                    ? "Tap the total for this month's recap. Tap a slice or category for details."
+                    : "Tap the total for this month's recap. Tap a bar or category for details."}
               </p>
             </div>
 

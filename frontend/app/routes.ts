@@ -7,6 +7,7 @@ export default [
     route("recap", "routes/recap.tsx"),
     route("categories", "routes/categories.tsx"),
     route("categories/:categoryId", "routes/category-detail.tsx"),
+    route("settings", "routes/settings.tsx"),
     route("test", "routes/test.tsx"),
   ]),
 ] satisfies RouteConfig;
