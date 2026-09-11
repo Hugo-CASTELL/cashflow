@@ -1,10 +1,14 @@
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ChartRingIcon,
   Invoice01Icon,
+  Logout03Icon,
   TagsIcon,
 } from "@hugeicons/core-free-icons";
+import { useAppData } from "~/components/app-data";
+import { Button } from "~/components/ui/button";
+import { clearSession } from "~/lib/auth";
 import { monthHref } from "~/lib/month";
 import { cn } from "~/lib/utils";
 
@@ -15,12 +19,23 @@ const links = [
 ] as const;
 
 export function TopNav({ month }: { month: string }) {
+  const { account } = useAppData();
+  const navigate = useNavigate();
+
+  function handleSignOut() {
+    clearSession();
+    navigate("/auth", { replace: true });
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:px-4">
-        <p className="hidden shrink-0 text-sm font-semibold tracking-tight sm:block">
-          Cashflow
-        </p>
+        <div className="hidden min-w-0 shrink-0 sm:block">
+          <p className="text-sm font-semibold tracking-tight">Cashflow</p>
+          {account?.name ? (
+            <p className="truncate text-xs text-muted-foreground">{account.name}</p>
+          ) : null}
+        </div>
         <nav className="grid min-w-0 flex-1 grid-cols-3 rounded-xl bg-muted p-1 sm:max-w-md">
           {links.map((link) => (
             <NavLink
@@ -39,6 +54,17 @@ export function TopNav({ month }: { month: string }) {
             </NavLink>
           ))}
         </nav>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 text-muted-foreground"
+          aria-label="Sign out"
+          title="Sign out"
+          onClick={handleSignOut}
+        >
+          <HugeiconsIcon icon={Logout03Icon} size={16} strokeWidth={2} />
+        </Button>
       </div>
     </header>
   );

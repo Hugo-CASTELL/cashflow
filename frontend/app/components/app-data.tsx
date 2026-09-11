@@ -1,7 +1,8 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { Category, Transaction } from "~/lib/api";
+import type { Category, PublicAccount, Transaction } from "~/lib/api";
 
 export type AppData = {
+  account: PublicAccount | null;
   categories: Category[];
   transactions: Transaction[];
   loadError: string | null;

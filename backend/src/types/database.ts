@@ -1,8 +1,20 @@
+export interface Account {
+  id: number
+  name: string
+  secret: string
+}
+
+export interface PublicAccount {
+  id: number
+  name: string
+}
+
 export interface Category {
   id: number
   title: string
   parent_id: number | null
   monthly_budget: string | null
+  account_id: number
 }
 
 export interface Transaction {
@@ -11,6 +23,15 @@ export interface Transaction {
   date: string
   category_id: number
   title: string | null
+  account_id: number
+}
+
+export interface CreateAccountInput {
+  name: string
+}
+
+export interface AuthAccountInput {
+  secret: string
 }
 
 export interface CreateCategoryInput {

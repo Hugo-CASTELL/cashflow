@@ -1,5 +1,5 @@
 import type { Route } from "./+types/test";
-import { Link, useRevalidator } from "react-router";
+import { Link, redirect, useRevalidator } from "react-router";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import {
   SAMPLE_BARCODED_CATEGORIES,
   SAMPLE_BARCODED_TRANSACTIONS,
 } from "~/lib/api";
+import { getSecretFromRequest } from "~/lib/auth";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -33,10 +34,15 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const secret = getSecretFromRequest(request);
+  if (!secret) {
+    throw redirect("/auth?next=/test");
+  }
+
   const [categories, transactions] = await Promise.all([
-    api.listCategories(true),
-    api.listTransactions(true),
+    api.listCategories(secret, true),
+    api.listTransactions(secret, true),
   ]);
 
   return { categories, transactions };

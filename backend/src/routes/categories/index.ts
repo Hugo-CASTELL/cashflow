@@ -65,18 +65,29 @@ function parseOptionalBudget (
 }
 
 const CATEGORY_COLUMNS =
-  'id, title, parent_id, monthly_budget::text AS monthly_budget'
+  'id, title, parent_id, monthly_budget::text AS monthly_budget, account_id'
 
 const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
-  fastify.get('/', async () => {
+  fastify.get('/', async (request, reply) => {
+    const account = await fastify.requireAccount(request, reply)
+    if (account === null) {
+      return
+    }
+
     const result = await fastify.pg.query<Category>(
-      `SELECT ${CATEGORY_COLUMNS} FROM categories ORDER BY id`
+      `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE account_id = $1 ORDER BY id`,
+      [account.id]
     )
 
     return result.rows
   })
 
   fastify.get<{ Params: { id: string } }>('/:id', async (request, reply) => {
+    const account = await fastify.requireAccount(request, reply)
+    if (account === null) {
+      return
+    }
+
     const id = parseCategoryId(request.params.id)
 
     if (id === null) {
@@ -84,8 +95,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Category>(
-      `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1`,
-      [id]
+      `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1 AND account_id = $2`,
+      [id, account.id]
     )
 
     if (result.rowCount === 0) {
@@ -96,6 +107,11 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
   })
 
   fastify.post<{ Body: CreateCategoryInput }>('/', async (request, reply) => {
+    const account = await fastify.requireAccount(request, reply)
+    if (account === null) {
+      return
+    }
+
     const { title, parent_id: parentId, monthly_budget: monthlyBudget } = request.body ?? {}
 
     if (typeof title !== 'string' || title.trim() === '') {
@@ -114,8 +130,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
 
     if (parsedParentId !== undefined && parsedParentId !== null) {
       const parent = await fastify.pg.query(
-        'SELECT id FROM categories WHERE id = $1',
-        [parsedParentId]
+        'SELECT id FROM categories WHERE id = $1 AND account_id = $2',
+        [parsedParentId, account.id]
       )
 
       if (parent.rowCount === 0) {
@@ -124,8 +140,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query<Category>(
-      `INSERT INTO categories (title, parent_id, monthly_budget) VALUES ($1, $2, $3) RETURNING ${CATEGORY_COLUMNS}`,
-      [title.trim(), parsedParentId ?? null, parsedBudget ?? null]
+      `INSERT INTO categories (title, parent_id, monthly_budget, account_id) VALUES ($1, $2, $3, $4) RETURNING ${CATEGORY_COLUMNS}`,
+      [title.trim(), parsedParentId ?? null, parsedBudget ?? null, account.id]
     )
 
     return reply.code(201).send(result.rows[0])
@@ -134,6 +150,11 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.patch<{ Params: { id: string }, Body: UpdateCategoryInput }>(
     '/:id',
     async (request, reply) => {
+      const account = await fastify.requireAccount(request, reply)
+      if (account === null) {
+        return
+      }
+
       const id = parseCategoryId(request.params.id)
 
       if (id === null) {
@@ -166,8 +187,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const parent = await fastify.pg.query(
-          'SELECT id FROM categories WHERE id = $1',
-          [parsedParentId]
+          'SELECT id FROM categories WHERE id = $1 AND account_id = $2',
+          [parsedParentId, account.id]
         )
 
         if (parent.rowCount === 0) {
@@ -176,8 +197,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       const existing = await fastify.pg.query<Category>(
-        `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1`,
-        [id]
+        `SELECT ${CATEGORY_COLUMNS} FROM categories WHERE id = $1 AND account_id = $2`,
+        [id, account.id]
       )
 
       if (existing.rowCount === 0) {
@@ -190,8 +211,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
       const nextBudget = parsedBudget !== undefined ? parsedBudget : current.monthly_budget
 
       const result = await fastify.pg.query<Category>(
-        `UPDATE categories SET title = $1, parent_id = $2, monthly_budget = $3 WHERE id = $4 RETURNING ${CATEGORY_COLUMNS}`,
-        [nextTitle, nextParentId, nextBudget, id]
+        `UPDATE categories SET title = $1, parent_id = $2, monthly_budget = $3 WHERE id = $4 AND account_id = $5 RETURNING ${CATEGORY_COLUMNS}`,
+        [nextTitle, nextParentId, nextBudget, id, account.id]
       )
 
       return result.rows[0]
@@ -199,15 +220,29 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
   )
 
   fastify.delete<{ Params: { id: string } }>('/:id', async (request, reply) => {
+    const account = await fastify.requireAccount(request, reply)
+    if (account === null) {
+      return
+    }
+
     const id = parseCategoryId(request.params.id)
 
     if (id === null) {
       return reply.badRequest('Invalid category id')
     }
 
+    const existing = await fastify.pg.query(
+      'SELECT id FROM categories WHERE id = $1 AND account_id = $2',
+      [id, account.id]
+    )
+
+    if (existing.rowCount === 0) {
+      return reply.notFound('Category not found')
+    }
+
     const linked = await fastify.pg.query(
-      'SELECT id FROM transactions WHERE category_id = $1 LIMIT 1',
-      [id]
+      'SELECT id FROM transactions WHERE category_id = $1 AND account_id = $2 LIMIT 1',
+      [id, account.id]
     )
 
     if (linked.rowCount && linked.rowCount > 0) {
@@ -215,8 +250,8 @@ const categories: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
 
     const result = await fastify.pg.query(
-      'DELETE FROM categories WHERE id = $1 RETURNING id',
-      [id]
+      'DELETE FROM categories WHERE id = $1 AND account_id = $2 RETURNING id',
+      [id, account.id]
     )
 
     if (result.rowCount === 0) {
